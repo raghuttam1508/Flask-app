@@ -4,7 +4,7 @@ from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy import ForeignKey
 app = Flask(__name__)
 
-app.config['SQLALCHEMY_DATABASE_URI'] = "mysql://root:root@127.0.0.1:3306/e_db"
+app.config['SQLALCHEMY_DATABASE_URI'] = "mysql://root:root@127.0.0.1:3306/E_Commerce_Flask"
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 db = SQLAlchemy(app)
 
@@ -13,7 +13,13 @@ app.app_context().push()
 @app.route('/')
 def hello_world():
     return render_template("index.html")
-   
+
+@app.route('/show')
+def show():
+    Cust = Customers.query.all()
+    print(Cust)
+    return "SHOW"
+
 
 class Customers(db.Model):
     cust_id = db.Column(db.Integer, primary_key=True)
