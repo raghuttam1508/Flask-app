@@ -39,8 +39,8 @@ class orders(db.Model):
     
 class customer_order_ref(db.Model):
     ref_id = db.Column(db.Integer, primary_key=True)
-    ForeignKey(Customers.cust_id)
-    ForeignKey(orders.order_id)
+    cust_id = db.Column(db.Integer,ForeignKey(Customers.cust_id))
+    order_id = db.Column(db.Integer,ForeignKey(orders.order_id))
 
     def __repr__(self) -> str:
         return f"{self.order_id} - {self.ref_id}"
