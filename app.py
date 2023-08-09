@@ -204,6 +204,47 @@ def update_order_status():
         return jsonify({"message": f"Updated order status of {order_id} to {status}"})
     else:
         return "UPDATE STATUS PAGE"
+    
+
+@app.route('/get_orders',methods=["GET","POST"])
+def get_orders():
+    try:
+        cur = mysql.connection.cursor()
+    except Exception as e:
+        return jsonify({"message": f"Database connection not Established, {e}"})
+    
+    if request.method == "POST":
+        # details = {
+        #     "phone_number" : 9876541232
+        # }
+        try:
+            details = request.json
+            phone_number = details["phone_number"]
+        except Exception as e:
+            return jsonify({"message":f"Error in input data type, Error - {e}"})
+
+        if phone_number is None:
+            return jsonify({"message": "Missing Phone Number"}), 400
+        
+        if phone_number < 1000000000 or phone_number > 9999999999:
+            return (
+                jsonify(
+                    {
+                        "message": "Phone number should have only numbers and should be of 10 digit"
+                    }
+                ),
+                422,
+            )
+        check_query = "select cust_id from Customers where phone_number = %s"
+        cur.execute(check_query,(phone_number,))
+        existing_cust_id = cur.fetchone()
+
+        if not existing_cust_id:
+            return jsonify({"message":f"Customer with phone number {phone_number} does not exist"})
+        
+        return jsonify({"message":"sucess"})
+    else:
+        return "GET ORDERS PAGE"
 
 
 # @app.route('/show')
