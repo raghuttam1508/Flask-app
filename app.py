@@ -1,57 +1,217 @@
 from datetime import datetime
-from flask import Flask, render_template
-from flask_sqlalchemy import SQLAlchemy
-from sqlalchemy import ForeignKey
+from flask import Flask, render_template, request, jsonify
+from flask_mysqldb import MySQL
+
 app = Flask(__name__)
-
-app.config['SQLALCHEMY_DATABASE_URI'] = "mysql://root:root@127.0.0.1:3306/E_Commerce_Flask"
-app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-db = SQLAlchemy(app)
-
 app.app_context().push()
 
-@app.route('/')
-def hello_world():
+app.config["MYSQL_HOST"] = "localhost"
+app.config["MYSQL_USER"] = "root"
+app.config["MYSQL_PASSWORD"] = "root"
+app.config["MYSQL_DB"] = "Ecommerce_Flask"
+mysql = MySQL(app)
+
+
+def is_alphabet(name):
+    st = name.replace(" ", "")
+    return st.isalpha()
+
+
+@app.route("/")
+def home():
     return render_template("index.html")
 
-@app.route('/show')
-def show():
-    Cust = Customers.query.all()
-    print(Cust)
-    return "SHOW"
+
+@app.route("/create_customer", methods=["POST", "GET"])
+def create_customer():
+    try:
+        cur = mysql.connection.cursor()
+    except Exception as e:
+        return jsonify({"message": f"Database connection not Established, {e}"})
+
+    if request.method == "POST":
+        # details = {
+        #     'phone_number': '9876543214',
+        #     'Name':'Raghu',
+        #     'Address':'Mumbai',
+        #     }
+        try:
+            details = request.json
+            phone_number = details["phone_number"]
+            name = details["name"]
+            address = details["address"]
+        except Exception as e:
+            return jsonify({"message": f"Error in input data type {e}"})
+
+        if phone_number is None or not name or not address:
+            return jsonify({"message": "Missing Phone Number, Name, or Address"}), 400
+
+        if not is_alphabet(name):
+            return jsonify({"message": "Invalid name format"}), 400
+
+        if not address.strip():
+            return jsonify({"message": "Empty Address"})
+
+        if phone_number < 1000000000 or phone_number > 9999999999:
+            return (
+                jsonify(
+                    {
+                        "message": "Phone number should have only numbers and should be of 10 digit"
+                    }
+                ),
+                422,
+            )
+
+        check_query = (
+            "SELECT cust_id FROM Customers WHERE phone_number = %s AND name = %s"
+        )
+        cur.execute(check_query, (phone_number, name))
+        existing_customer = cur.fetchone()
+
+        if existing_customer:
+            return (
+                jsonify(
+                    {
+                        "message": f"Customer with the same name and phone number already exists, with ID {existing_customer[0]}"
+                    }
+                ),
+                422,
+            )
+
+        query = (
+            "INSERT INTO Customers (phone_number, name, address) VALUES (%s, %s, %s)"
+        )
+        val = (phone_number, name, address)
+        cur.execute(query, val)
+        mysql.connection.commit()
+        cur.close()
+        return jsonify({"message": f"sucessfully created user {name}"})
+    else:
+        return render_template("CreateCustomerForm.html")
 
 
-class Customers(db.Model):
-    cust_id = db.Column(db.Integer, primary_key=True)
-    phone_number = db.Column(db.Integer, nullable=False)
-    Fname = db.Column(db.String(15), nullable=False)
-    Lname = db.Column(db.String(20), nullable=False)
-    address = db.Column(db.String(50),nullable=False)
-    timestamp = db.Column(db.DateTime, default = datetime.utcnow)
+@app.route("/order", methods=["POST", "GET"])
+def create_order():
+    try:
+        cur = mysql.connection.cursor()
+    except Exception as e:
+        return jsonify({"message": f"Database connection not Established, {e}"})
 
-    def __repr__(self) -> str:
-        return f"{self.cust_id} - {self.Fname}"
+    if request.method == "POST":
+        # details = {
+        #     'item_name' : "Tooth Brush",
+        #     'phone_number': '7894561237',
+        # }
 
-class orders(db.Model):
-    order_id = db.Column(db.Integer, primary_key=True)
-    item_name = db.Column(db.String(15), nullable=False)
-    status = db.Column(db.Enum("Dispactched","Not Dispatched"))
-    created_at = db.Column(db.String(10), nullable=False)
-    updated_at = db.Column(db.String(10), nullable=False)
+        try:
+            details = request.json
+            item_name = details["item_name"]
+            phone_number = details["phone_number"]
+        except Exception as e:
+            return jsonify({"message": f"Error in input data type {e}"})
+
+        if item_name is None or phone_number is None:
+            return jsonify({"message": "Missing item name or phone number"}), 400
+        if phone_number < 1000000000 or phone_number > 9999999999:
+            return (
+                jsonify(
+                    {
+                        "message": "Phone number should have only numbers and should be of 10 digit"
+                    }
+                ),
+                422,
+            )
+        if not item_name.strip():
+            return jsonify({"message": "Empty Item Name"})
+
+        select_cust_id = "select cust_id from Customers where phone_number = %s"
+        cur.execute(select_cust_id, (phone_number,))
+        cust_id = cur.fetchone()
+
+        if not cust_id:
+            return jsonify({"message": "Customer not found"}), 404
+
+        insert_to_orders = "INSERT INTO Orders (item_name, created_at, updated_at) values (%s, NOW(), NOW())"
+        cur.execute(insert_to_orders, (item_name,))
+        mysql.connection.commit()
+
+        order_id = cur.lastrowid
+        vals = (cust_id, order_id)
+
+        insert_ref_query = (
+            "INSERT INTO customer_order_ref (cust_id, order_id) VALUES (%s, %s)"
+        )
+        cur.execute(insert_ref_query, vals)
+        mysql.connection.commit()
+
+        ref_id = cur.lastrowid
+        cur.close()
+        return jsonify(
+            {
+                "message": f"Order created successfully with Order ID {order_id} and refernce ID {ref_id}"
+            }
+        )
+
+    if request.method == "GET":
+        return render_template("OrderForm.html")
 
 
-    def __repr__(self) -> str:
-        return f"{self.order_id} - {self.item_name}"
-    
-class customer_order_ref(db.Model):
-    ref_id = db.Column(db.Integer, primary_key=True)
-    cust_id = db.Column(db.Integer,ForeignKey(Customers.cust_id))
-    order_id = db.Column(db.Integer,ForeignKey(orders.order_id))
+@app.route("/products", methods=["GET", "POST"])
+def products():
+    if request.method == "GET":
+        return render_template("productsPage.html")
 
-    def __repr__(self) -> str:
-        return f"{self.order_id} - {self.ref_id}"
-    
+
+@app.route("/updateStatus", methods=["GET", "POST"])
+def update_order_status():
+    try:
+        cur = mysql.connection.cursor()
+    except Exception as e:
+        return jsonify({"message": f"Database connection not Established, {e}"})
+
+    if request.method == "POST":
+        # details = {
+        #     "order_id" : 5,
+        #     "Status" : "Dispatched"
+        # }
+
+        try:
+            details = request.json
+            order_id = details["order_id"]
+            status = details["status"]
+        except Exception as e:
+            return jsonify({"message": f"Error in input data type, Error -  {e}"})
+
+        if order_id is None or status is None:
+            return jsonify({"message": "Missing data"})
+
+        if not is_alphabet(status):
+            return jsonify({"message": "Invalid Status"}), 400
+
+        check_order_id = "select order_id from Orders where order_id = %s"
+        cur.execute(check_order_id, (order_id,))
+        id_1 = cur.fetchone
+
+        if not id_1:
+            return jsonify({"message": "Order not found"}), 404
+
+        update_status = (
+            "update Orders set status = %s, updated_at = NOW() where order_id = %s"
+        )
+        cur.execute(update_status, (status, order_id))
+        mysql.connection.commit()
+
+        return jsonify({"message": f"Updated order status of {order_id} to {status}"})
+    else:
+        return "UPDATE STATUS PAGE"
+
+
+# @app.route('/show')
+# def show():
+#     Cust = Customers.query.all()
+#     m = jsonify(Cust)
+#     print(m)
+#     return render_template("show.html",Cust=Cust)
 
 if __name__ == "__main__":
-    db.create_all()
     app.run(debug=True, port=8000)
