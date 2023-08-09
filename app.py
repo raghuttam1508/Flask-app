@@ -1,6 +1,7 @@
 from datetime import datetime
 from flask import Flask, render_template, request, jsonify
 from flask_mysqldb import MySQL
+import json
 
 app = Flask(__name__)
 app.app_context().push()
@@ -204,15 +205,15 @@ def update_order_status():
         return jsonify({"message": f"Updated order status of {order_id} to {status}"})
     else:
         return "UPDATE STATUS PAGE"
-    
 
-@app.route('/get_orders',methods=["GET","POST"])
+
+@app.route("/get_orders", methods=["GET", "POST"])
 def get_orders():
     try:
         cur = mysql.connection.cursor()
     except Exception as e:
         return jsonify({"message": f"Database connection not Established, {e}"})
-    
+
     if request.method == "POST":
         # details = {
         #     "phone_number" : 9876541232
@@ -221,11 +222,14 @@ def get_orders():
             details = request.json
             phone_number = details["phone_number"]
         except Exception as e:
-            return jsonify({"message":f"Error in input data type, Error - {e}"})
+            return jsonify({"message": f"Error in input data type, Error - {e}"})
 
         if phone_number is None:
             return jsonify({"message": "Missing Phone Number"}), 400
-        
+
+        # if not phone_number.isdigit():
+        #     return jsonify({"message": "Invalid phone number"}), 400
+
         if phone_number < 1000000000 or phone_number > 9999999999:
             return (
                 jsonify(
@@ -236,13 +240,24 @@ def get_orders():
                 422,
             )
         check_query = "select cust_id from Customers where phone_number = %s"
-        cur.execute(check_query,(phone_number,))
+        cur.execute(check_query, (phone_number,))
         existing_cust_id = cur.fetchone()
 
         if not existing_cust_id:
-            return jsonify({"message":f"Customer with phone number {phone_number} does not exist"})
-        
-        return jsonify({"message":"sucess"})
+            return jsonify(
+                {"message": f"Customer with phone number {phone_number} does not exist"}
+            )
+
+        get_order_details = "select item_name, order_id, status from Orders where order_id in ( select order_id from customer_order_ref where cust_id = %s) order by updated_at desc;"
+        cur.execute(get_order_details, (existing_cust_id,))
+        results = cur.fetchall()
+
+        order_data = []
+        for i in results:
+            orders_dict = {"order_id": i[1], "item name": i[0], "status": i[2]}
+            order_data.append(orders_dict)
+
+        return jsonify({"Orders": f"{order_data}"})
     else:
         return "GET ORDERS PAGE"
 
