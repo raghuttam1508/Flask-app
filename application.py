@@ -1,16 +1,17 @@
 from datetime import datetime
 from flask import Flask, redirect, render_template, request, jsonify
+import flask
 from flask_mysqldb import MySQL
 import json
 
-app = Flask(__name__)
-app.app_context().push()
+application = Flask(__name__)
+application.app_context().push()
 
-app.config["MYSQL_HOST"] = "localhost"
-app.config["MYSQL_USER"] = "root"
-app.config["MYSQL_PASSWORD"] = "root"
-app.config["MYSQL_DB"] = "Ecommerce_Flask"
-mysql = MySQL(app)
+application.config["MYSQL_HOST"] = "localhost"
+application.config["MYSQL_USER"] = "root"
+application.config["MYSQL_PASSWORD"] = "root"
+application.config["MYSQL_DB"] = "Ecommerce_Flask"
+mysql = MySQL(application)
 
 
 def is_alphabet(name):
@@ -18,12 +19,12 @@ def is_alphabet(name):
     return st.isalpha()
 
 
-@app.route("/")
+@application.route("/")
 def home():
     return render_template("index.html")
 
 
-@app.route("/create_customer", methods=["POST", "GET"])
+@application.route("/create_customer", methods=["POST", "GET"])
 def create_customer():
     try:
         cur = mysql.connection.cursor()
@@ -37,7 +38,7 @@ def create_customer():
         #     'Address':'Mumbai',
         #     }
         try:
-            details = request.form
+            details = request.json
             phone_number = int(details["phone_number"])
             name = details["name"]
             address = details["address"]
@@ -89,7 +90,7 @@ def create_customer():
         return render_template("CreateCustomerForm.html")
 
 
-@app.route("/order", methods=["POST", "GET"])
+@application.route("/order", methods=["POST", "GET"])
 def create_order():
     try:
         cur = mysql.connection.cursor()
@@ -103,7 +104,7 @@ def create_order():
         # }
 
         try:
-            details = request.form
+            details = request.json 
             item_name = details["item_name"]
             phone_number = int(details["phone_number"])
         except Exception as e:
@@ -156,13 +157,13 @@ def create_order():
         return render_template("OrderForm.html")
 
 
-@app.route("/products", methods=["GET", "POST"])
+@application.route("/products", methods=["GET", "POST"])
 def products():
     if request.method == "GET":
         return render_template("productsPage.html")
 
 
-@app.route("/updateStatus", methods=["GET", "POST"])
+@application.route("/updateStatus", methods=["GET", "POST"])
 def update_order_status():
     try:
         cur = mysql.connection.cursor()
@@ -176,7 +177,7 @@ def update_order_status():
         # }
 
         try:
-            details = request.form
+            details = request.json
 
             order_id = details["order_id"]
             status = details["status"]
@@ -210,7 +211,7 @@ def update_order_status():
         return render_template("/updateStatusForm.html")
 
 
-@app.route("/get_orders", methods=["GET", "POST"])
+@application.route("/get_orders", methods=["GET", "POST"])
 def get_orders():
     try:
         cur = mysql.connection.cursor()
@@ -222,7 +223,7 @@ def get_orders():
         #     "phone_number" : 9876541232
         # }
         try:
-            details = request.form
+            details = request.json
             phone_number = int(details["phone_number"])
         except Exception as e:
             return jsonify({"message": f"Error in input data type, Error - {e}"})
@@ -252,12 +253,14 @@ def get_orders():
         cur.execute(get_order_details, (existing_cust_id,))
         results = cur.fetchall()
 
-        order_data = []
+        order_data = {}
+        c= 0
         for i in results:
-            orders_dict = {"order_id": i[1], "item name": i[0], "status": i[2]}
-            order_data.append(orders_dict)
-
-        return str(results)
+            
+            order_data[c] = {"order_id": str(i[1]), "item name": str(i[0]), "status": str(i[2])}        
+            c+=1
+        return jsonify(order_data)
+    
     else:
         return render_template("GetOrders.html")
 
@@ -270,4 +273,4 @@ def get_orders():
 #     return render_template("show.html",Cust=Cust)
 
 if __name__ == "__main__":
-    app.run(debug=True)
+    application.run(debug=True)
