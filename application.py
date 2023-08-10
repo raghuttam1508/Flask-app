@@ -38,7 +38,7 @@ def create_customer():
         #     'Address':'Mumbai',
         #     }
         try:
-            details = request.json
+            details = request.form
             phone_number = int(details["phone_number"])
             name = details["name"]
             address = details["address"]
@@ -104,7 +104,7 @@ def create_order():
         # }
 
         try:
-            details = request.json
+            details = request.form
             item_name = details["item_name"]
             phone_number = int(details["phone_number"])
         except Exception as e:
@@ -177,7 +177,7 @@ def update_order_status():
         # }
 
         try:
-            details = request.json
+            details = request.form
 
             order_id = details["order_id"]
             status = details["status"]
@@ -223,7 +223,7 @@ def get_orders():
         #     "phone_number" : 9876541232
         # }
         try:
-            details = request.json
+            details = request.form 
             phone_number = int(details["phone_number"])
         except Exception as e:
             return jsonify({"message": f"Error in input data type, Error - {e}"})
@@ -256,7 +256,7 @@ def get_orders():
         order_data = {}
         count = 0
         for i in results:
-            order_data[c] = {
+            order_data[count] = {
                 "order_id": str(i[1]),
                 "item name": str(i[0]),
                 "status": str(i[2]),
