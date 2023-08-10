@@ -1,0 +1,23 @@
+{% extends 'base.html' %} {% block title %} Products {% endblock title %} {%
+block body %}
+<div class="container my-3">
+  <h2>Create Customers</h2>
+  <form action="/get_orders" , method="POST">
+    <div class="mb-3">
+      <label for="Phone_number" class="form-label">Phone Number</label>
+      <input
+        type="number"
+        class="form-control"
+        name="phone_number"
+        min="1000000000"
+        max="9999999999"
+        id="Phone_number"
+        required
+      />
+    </div>
+
+    <button type="submit" class="btn btn-primary">Submit</button>
+  </form>
+  <a href="/" class="my-3 btn btn-primary">Back Home</a>
+</div>
+{% endblock body %}

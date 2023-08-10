@@ -1,11 +1,52 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Products Page</title>
-</head>
-<body>
-    <a href="/order" class="btn btn-primary">Product Form</a>
-</body>
-</html>
+{% extends 'base.html' %} {% block title %} Products {% endblock title %} {%
+block body %}
+<h1 class = "display-1 mb-3 my-3 row justify-content-center">PRODUCT LIST</h1>
+<div class="container mb-5 my-5">
+  <div class="card">
+    <div class="card-header">Product - 1</div>
+    <div class="card-body">
+      <h5 class="card-title">Tooth Brush</h5>
+      <p class="card-text">
+        With supporting text below as a natural lead-in to additional content.
+      </p>
+      <a href="/order" class="btn btn-primary">Order Now</a>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-header">Product - 2</div>
+    <div class="card-body">
+      <h5 class="card-title">Pencil</h5>
+      <p class="card-text">
+        With supporting text below as a natural lead-in to additional content.
+      </p>
+      <a href="/order" class="btn btn-primary">Order Now</a>
+    </div>
+
+    <div class="card">
+      <div class="card-header">Product - 3</div>
+      <div class="card-body">
+        <h5 class="card-title">Shampoo</h5>
+        <p class="card-text">
+          With supporting text below as a natural lead-in to additional content.
+        </p>
+        <a href="/order" class="btn btn-primary">Order Now</a>
+      </div>
+
+      <div class="card">
+        <div class="card-header">Product - 4</div>
+        <div class="card-body">
+          <h5 class="card-title">Eraser</h5>
+          <p class="card-text">
+            With supporting text below as a natural lead-in to additional
+            content.
+          </p>
+          <a href="/order" class="btn btn-primary">Order Now</a>
+        </div>
+      </div>
+
+      <a href="/order" class="btn btn-primary">Product Form</a>
+    </div>
+  </div>
+</div>
+{% endblock body %}

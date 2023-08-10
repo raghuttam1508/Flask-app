@@ -1,0 +1,28 @@
+{% extends 'base.html' %} {% block title %} Home{% endblock title %} {% block
+body %}
+<div class="container my-3">
+  <h2>Update Status</h2>
+  <form action="/updateStatus" , method="POST">
+    <label for="order_id" class="form-label">Order ID</label>
+    <input
+      type="number"
+      class="form-control"
+      name="order_id"
+      id="order_id"
+      aria-describedby=""
+      required
+    />
+    <div class="mb-3 my-3"></div>
+    <label for="status">Update Status to:</label>
+    <select id="status" name="status">
+      <option value="Initiated">Initiated</option>
+      <option value="Payment done">Payment done</option>
+      <option value="Delivered">Delivered</option>
+    </select>
+    <div class="mb-3 my-3">
+
+    <button type="submit" class="btn btn-primary">Submit</button>
+  </form>
+  <a href="/" class="my-3 btn btn-primary">Back Home</a>
+</div>
+{% endblock body %}

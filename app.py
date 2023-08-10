@@ -1,5 +1,5 @@
 from datetime import datetime
-from flask import Flask, render_template, request, jsonify
+from flask import Flask, redirect, render_template, request, jsonify
 from flask_mysqldb import MySQL
 import json
 
@@ -37,12 +37,12 @@ def create_customer():
         #     'Address':'Mumbai',
         #     }
         try:
-            details = request.json
-            phone_number = details["phone_number"]
+            details = request.form
+            phone_number = int(details["phone_number"])
             name = details["name"]
             address = details["address"]
         except Exception as e:
-            return jsonify({"message": f"Error in input data type {e}"})
+            return jsonify({"message": f"Error in input data type Error - {e}"})
 
         if phone_number is None or not name or not address:
             return jsonify({"message": "Missing Phone Number, Name, or Address"}), 400
@@ -63,17 +63,15 @@ def create_customer():
                 422,
             )
 
-        check_query = (
-            "SELECT cust_id FROM Customers WHERE phone_number = %s AND name = %s"
-        )
-        cur.execute(check_query, (phone_number, name))
+        check_query = "SELECT cust_id, name FROM Customers WHERE phone_number = %s"
+        cur.execute(check_query, (phone_number,))
         existing_customer = cur.fetchone()
 
         if existing_customer:
             return (
                 jsonify(
                     {
-                        "message": f"Customer with the same name and phone number already exists, with ID {existing_customer[0]}"
+                        "message": f"Customer with the same name and phone number already exists, with ID {existing_customer[0]} and name {existing_customer[1]}"
                     }
                 ),
                 422,
@@ -105,9 +103,9 @@ def create_order():
         # }
 
         try:
-            details = request.json
+            details = request.form
             item_name = details["item_name"]
-            phone_number = details["phone_number"]
+            phone_number = int(details["phone_number"])
         except Exception as e:
             return jsonify({"message": f"Error in input data type {e}"})
 
@@ -133,7 +131,8 @@ def create_order():
             return jsonify({"message": "Customer not found"}), 404
 
         insert_to_orders = "INSERT INTO Orders (item_name, created_at, updated_at) values (%s, NOW(), NOW())"
-        cur.execute(insert_to_orders, (item_name,))
+        item = item_name.strip()
+        cur.execute(insert_to_orders, (item,))
         mysql.connection.commit()
 
         order_id = cur.lastrowid
@@ -177,7 +176,8 @@ def update_order_status():
         # }
 
         try:
-            details = request.json
+            details = request.form
+
             order_id = details["order_id"]
             status = details["status"]
         except Exception as e:
@@ -186,14 +186,17 @@ def update_order_status():
         if order_id is None or status is None:
             return jsonify({"message": "Missing data"})
 
+        if not order_id.isdigit():
+            return jsonify({"message": "Order ID must be a number"})
+
         if not is_alphabet(status):
             return jsonify({"message": "Invalid Status"}), 400
 
         check_order_id = "select order_id from Orders where order_id = %s"
         cur.execute(check_order_id, (order_id,))
-        id_1 = cur.fetchone
+        id_1 = cur.fetchone()
 
-        if not id_1:
+        if id_1 is None:
             return jsonify({"message": "Order not found"}), 404
 
         update_status = (
@@ -204,7 +207,7 @@ def update_order_status():
 
         return jsonify({"message": f"Updated order status of {order_id} to {status}"})
     else:
-        return "UPDATE STATUS PAGE"
+        return render_template("/updateStatusForm.html")
 
 
 @app.route("/get_orders", methods=["GET", "POST"])
@@ -219,16 +222,13 @@ def get_orders():
         #     "phone_number" : 9876541232
         # }
         try:
-            details = request.json
-            phone_number = details["phone_number"]
+            details = request.form
+            phone_number = int(details["phone_number"])
         except Exception as e:
             return jsonify({"message": f"Error in input data type, Error - {e}"})
 
         if phone_number is None:
             return jsonify({"message": "Missing Phone Number"}), 400
-
-        # if not phone_number.isdigit():
-        #     return jsonify({"message": "Invalid phone number"}), 400
 
         if phone_number < 1000000000 or phone_number > 9999999999:
             return (
@@ -257,9 +257,9 @@ def get_orders():
             orders_dict = {"order_id": i[1], "item name": i[0], "status": i[2]}
             order_data.append(orders_dict)
 
-        return jsonify({"Orders": f"{order_data}"})
+        return str(results)
     else:
-        return "GET ORDERS PAGE"
+        return render_template("GetOrders.html")
 
 
 # @app.route('/show')
@@ -270,4 +270,4 @@ def get_orders():
 #     return render_template("show.html",Cust=Cust)
 
 if __name__ == "__main__":
-    app.run(debug=True, port=8000)
+    app.run(debug=True)
