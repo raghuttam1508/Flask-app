@@ -104,7 +104,7 @@ def create_order():
         # }
 
         try:
-            details = request.json 
+            details = request.json
             item_name = details["item_name"]
             phone_number = int(details["phone_number"])
         except Exception as e:
@@ -254,13 +254,16 @@ def get_orders():
         results = cur.fetchall()
 
         order_data = {}
-        c= 0
+        count = 0
         for i in results:
-            
-            order_data[c] = {"order_id": str(i[1]), "item name": str(i[0]), "status": str(i[2])}        
-            c+=1
+            order_data[c] = {
+                "order_id": str(i[1]),
+                "item name": str(i[0]),
+                "status": str(i[2]),
+            }
+            count += 1
         return jsonify(order_data)
-    
+
     else:
         return render_template("GetOrders.html")
 
